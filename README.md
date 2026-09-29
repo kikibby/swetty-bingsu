@@ -82,3 +82,9 @@ npm run build
 
 ## รูปเมนู
 รูปเมนูทั้ง 4 รายการใช้ Supabase Storage bucket `Bingsuu` โดย `image_url` ชี้ไปยังไฟล์ใน bucket โดยตรง สามารถเปลี่ยนรูปได้ที่ Supabase Storage โดยไม่ต้องแก้โค้ดหน้าเมนู
+
+## UI Redesign + Menu loading fix
+- Customer menu now loads through `/api/menu` using the server-side Supabase admin client, so menu display is not blocked by public RLS policies.
+- Customer-facing pages no longer show staff-call, bill collection, or VAT controls.
+- The four active bingsu items remain the same and continue using the `Bingsuu` Storage bucket.
+- Home, order, customer status, QR studio, kitchen, dashboard, and staff floor monitor use separate visual layouts.

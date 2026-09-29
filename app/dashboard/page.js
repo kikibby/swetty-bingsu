@@ -1,17 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { Brand, SectionIcon, TitleBlock } from "@/components/Brand";
-export default function DashboardPage() {
-  const [orders, setOrders] = useState([]), [sessions, setSessions] = useState([]), [loading, setLoading] = useState(true), [message, setMessage] = useState("");
-  useEffect(() => { loadDashboard(); }, []);
-  async function loadDashboard() { setLoading(true); const start = new Date(); start.setHours(0,0,0,0); const [ordersResult, sessionsResult] = await Promise.all([supabase.from("orders").select("*").gte("created_at", start.toISOString()), supabase.from("sessions").select("*")]); if (ordersResult.error || sessionsResult.error) setMessage(ordersResult.error?.message || sessionsResult.error?.message); else { setOrders(ordersResult.data || []); setSessions(sessionsResult.data || []); } setLoading(false); }
-  const sales = orders.filter((o) => ["ready","served"].includes(o.status)).reduce((sum,o) => sum + Number(o.total),0);
-  const activeTables = sessions.filter((s) => s.status === "open").length;
-  const itemCount = orders.reduce((sum,o) => sum + (o.items || []).reduce((n,item) => n + Number(item.quantity),0),0);
-  if (loading) return <main className="container loading-page"><Brand compact /><p>กำลังโหลด Dashboard...</p></main>;
-  return <main className="container dashboard-page"><div className="page-brand-row"><Brand compact /><span className="staff-chip">STAFF • DAILY</span></div><div className="page-heading"><TitleBlock eyebrow="BUSINESS DASHBOARD" title="ภาพรวมร้านวันนี้" description="สรุปยอดขายและสถานะโต๊ะของหวานหิมะ บิงซู" icon="dashboard" /></div>{message && <p className="notice error">{message}</p>}
-    <div className="stats-grid"><div className="stat-card red"><div className="stat-icon"><SectionIcon type="dashboard" /></div><span>ยอดขายวันนี้</span><strong>{sales.toLocaleString()} บาท</strong></div><div className="stat-card blue"><div className="stat-icon"><SectionIcon type="menu" /></div><span>จำนวนออเดอร์</span><strong>{orders.length}</strong></div><div className="stat-card gold"><div className="stat-icon"><SectionIcon type="table" /></div><span>โต๊ะที่ใช้งาน</span><strong>{activeTables}</strong></div><div className="stat-card green"><div className="stat-icon"><SectionIcon type="cart" /></div><span>จำนวนรายการอาหาร</span><strong>{itemCount}</strong></div></div>
-    <div className="card dashboard-note"><div className="mini-icon"><SectionIcon type="dashboard" /></div><div><h2>ระบบพร้อมใช้งาน</h2><p className="muted">ข้อมูลออเดอร์และโต๊ะถูกอ่านจาก Supabase ตามสถานะปัจจุบันของระบบ</p></div></div>
-  </main>;
+import { useEffect,useState } from "react";
+import { Brand } from "@/components/Brand";
+export default function DashboardPage(){
+ const [orders,setOrders]=useState([]),[sessions,setSessions]=useState([]),[loading,setLoading]=useState(true),[message,setMessage]=useState("");
+ useEffect(()=>{load();},[]);
+ async function load(){setLoading(true);const start=new Date();start.setHours(0,0,0,0);const [o,s]=await Promise.all([fetch(`/api/dashboard?start=${encodeURIComponent(start.toISOString())}`,{cache:"no-store"}),fetch(`/api/dashboard?kind=sessions`,{cache:"no-store"})]); if(!o.ok||!s.ok){setMessage("ยังโหลดข้อมูลสรุปไม่ได้");setLoading(false);return;}const od=await o.json(),sd=await s.json();setOrders(od.orders||[]);setSessions(sd.sessions||[]);setLoading(false)}
+ if(loading)return <main className="container dashboard-paper loading-page"><Brand compact/><p>กำลังจัดหน้าร้านวันนี้...</p></main>;
+ const sales=orders.reduce((sum,o)=>sum+Number(o.total||0),0),active=sessions.filter(s=>s.status==="open").length,served=orders.filter(o=>o.status==="served").length,items=orders.reduce((n,o)=>n+(o.items||[]).reduce((x,i)=>x+Number(i.quantity||0),0),0);
+ return <main className="container dashboard-paper"><header className="dash-head"><Brand compact/><div><span>WAN HIMA / DAILY LEDGER</span><h1>ภาพรวมร้าน</h1></div><div className="dash-date">TODAY</div></header>{message&&<p className="notice error">{message}</p>}
+ <section className="dash-metrics"><div className="metric large"><span>ยอดออเดอร์</span><strong>{sales.toLocaleString()} ฿</strong><small>จาก {orders.length} ออเดอร์</small></div><div className="metric"><span>โต๊ะเปิด</span><strong>{active}</strong><small>โต๊ะ</small></div><div className="metric"><span>เสิร์ฟแล้ว</span><strong>{served}</strong><small>ออเดอร์</small></div><div className="metric"><span>จำนวนชิ้น</span><strong>{items}</strong><small>รายการ</small></div></section>
+ <section className="dash-board"><div className="dash-board-title"><span>RECENT ORDERS</span><strong>คิวล่าสุด</strong></div>{orders.slice(-8).reverse().map(o=><div className="dash-row" key={o.id}><b>#{o.queue_number}</b><span>โต๊ะ {o.table_number}</span><span>{(o.items||[]).map(i=>`${i.name} ×${i.quantity}`).join(", ")}</span><strong>{Number(o.total).toLocaleString()} ฿</strong></div>)}{!orders.length&&<div className="dash-empty">วันนี้ยังไม่มีออเดอร์</div>}</section>
+ </main>;
 }

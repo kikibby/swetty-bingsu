@@ -13,26 +13,17 @@ export async function GET() {
       .eq("token", token)
       .eq("status", "open")
       .maybeSingle();
-
     if (error) throw error;
     if (!session) return NextResponse.json({ message: "Session หมดอายุหรือโต๊ะถูกปิดแล้ว" }, { status: 403 });
 
     const { data: orders, error: ordersError } = await supabaseAdmin
       .from("orders")
-      .select("id, session_id, table_number, items, total, status, created_at")
+      .select("id, session_id, table_number, queue_number, items, total, status, created_at")
       .eq("session_id", session.id)
       .order("created_at", { ascending: true });
     if (ordersError) throw ordersError;
 
-    const { data: requests, error: requestsError } = await supabaseAdmin
-      .from("staff_requests")
-      .select("id, type, status, created_at")
-      .eq("session_id", session.id)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-    if (requestsError) throw requestsError;
-
-    return NextResponse.json({ session, orders: orders || [], requests: requests || [] });
+    return NextResponse.json({ session, orders: orders || [] });
   } catch (error) {
     console.error("Customer data error:", error);
     return NextResponse.json({ message: error.message || "โหลดข้อมูลไม่สำเร็จ" }, { status: 500 });

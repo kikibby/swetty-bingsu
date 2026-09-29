@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { Brand, SectionIcon } from "@/components/Brand";
 
 export default function OrderPage() {
@@ -15,10 +14,6 @@ export default function OrderPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [callingStaff, setCallingStaff] = useState(false);
-  const [staffCalled, setStaffCalled] = useState(false);
-  const [billRequested, setBillRequested] = useState(false);
-  const [billSummary, setBillSummary] = useState(null);
 
   useEffect(() => { enterAndLoad(); }, [tableNumber]);
 
@@ -36,13 +31,13 @@ export default function OrderPage() {
       const entered = await enterResponse.json();
       if (!enterResponse.ok) throw new Error(entered.message || "QR หมดอายุ");
 
-      const { data: categoryData, error: categoryError } = await supabase.from("menu_categories").select("*").order("sort_order");
-      const { data: menuData, error: menuError } = await supabase.from("menu_items").select("*").eq("is_available", true);
-      if (categoryError || menuError) throw new Error(categoryError?.message || menuError?.message);
+      const menuResponse = await fetch("/api/menu", { cache: "no-store" });
+      const menuResult = await menuResponse.json();
+      if (!menuResponse.ok) throw new Error(menuResult.message || "โหลดเมนูไม่สำเร็จ");
 
       setSession(entered.session);
-      setCategories(categoryData || []);
-      setMenuItems(menuData || []);
+      setCategories(menuResult.categories || []);
+      setMenuItems(menuResult.items || []);
     } catch (error) {
       setMessage(error.message || "โหลดข้อมูลไม่ได้");
     } finally { setLoading(false); }
@@ -60,47 +55,6 @@ export default function OrderPage() {
 
   const total = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
   const itemCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
-
-  async function callStaff() {
-    if (callingStaff || staffCalled) return;
-    setCallingStaff(true);
-    setMessage("");
-    try {
-      const response = await fetch("/api/staff-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "staff" }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "เรียกพนักงานไม่สำเร็จ");
-      setStaffCalled(true);
-      setMessage("🔔 เรียกพนักงานแล้ว กรุณารอสักครู่");
-    } catch (error) {
-      setMessage(error.message || "เรียกพนักงานไม่สำเร็จ");
-    } finally {
-      setCallingStaff(false);
-    }
-  }
-
-  async function requestBill() {
-    if (billRequested) return;
-    setBillRequested(true);
-    setMessage("");
-    try {
-      const response = await fetch("/api/staff-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "bill" }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "เรียกเก็บเงินไม่สำเร็จ");
-      setBillSummary(result.billing || null);
-      setMessage("success-bill");
-    } catch (error) {
-      setBillRequested(false);
-      setMessage(error.message || "เรียกเก็บเงินไม่สำเร็จ");
-    }
-  }
 
   async function submitOrder() {
     if (!session) return setMessage("ไม่พบ Session ของโต๊ะนี้");
@@ -125,23 +79,9 @@ export default function OrderPage() {
   if (loading) return <main className="container loading-page"><Brand compact /><p>กำลังโหลดเมนู...</p></main>;
   if (!session) return <main className="container"><div className="site-topbar"><Brand compact /></div><div className="card error-panel"><h1>ไม่พบโต๊ะ</h1><p className="error">{message || "Session ไม่ถูกต้อง"}</p></div></main>;
 
-  return <main className="container customer-page">
-    <header className="customer-header">
-      <Brand compact />
-      <div className="customer-meta"><div className="table-pill">โต๊ะ {tableNumber}</div><div className="customer-people">ผู้ใหญ่ {session.adult_count ?? 1} • เด็ก {session.child_count ?? 0}</div></div>
-    </header>
-    <div className="customer-welcome"><div><div className="eyebrow">MENU • ORDER FROM YOUR TABLE</div><h1>เลือกเมนูที่ต้องการ</h1><p className="muted">กด + เพื่อเพิ่มจำนวน หรือกด − เพื่อลดจำนวน</p></div><div className="menu-count"><SectionIcon type="menu" /> {menuItems.length} เมนู</div></div>
-    <div className="customer-quick-actions">
-      <button className={`quick-service-card staff ${staffCalled ? "called" : ""}`} onClick={callStaff} disabled={callingStaff || staffCalled || billRequested}>
-        <span className="quick-service-icon">🔔</span>
-        <span><strong>{callingStaff ? "กำลังเรียกพนักงาน..." : staffCalled ? "พนักงานรับคำขอแล้ว" : "เรียกพนักงาน"}</strong><small>ต้องการความช่วยเหลือที่โต๊ะ</small></span>
-      </button>
-      <button className={`quick-service-card bill ${billRequested ? "called" : ""}`} onClick={requestBill} disabled={billRequested || callingStaff}>
-        <span className="quick-service-icon">💳</span>
-        <span><strong>{billRequested ? "พนักงานกำลังมา" : "เรียกเก็บเงิน"}</strong><small>{billRequested ? "โต๊ะถูกปิดเรียบร้อย" : "ดูยอดรวมพร้อม VAT 7%"}</small></span>
-      </button>
-      <a href={`/customer/${encodeURIComponent(tableNumber)}`} className="order-service-link">📋 ดูรายละเอียดออเดอร์</a>
-    </div>
+  return <main className="container order-page-new">
+    <header className="order-topline"><Brand compact /><div className="order-table-badge"><span>TABLE</span><strong>{tableNumber}</strong></div></header>
+    <section className="order-intro"><div><span className="menu-kicker">WAN HIMA • DESSERT BAR</span><h1>เลือกความหวาน<br /><em>สำหรับโต๊ะของคุณ</em></h1><p>เลือกบิงซูที่ชอบ แล้วกด + เพื่อเพิ่มลงในถาดสั่ง</p></div><div className="order-count-orb"><strong>{menuItems.length}</strong><span>เมนู</span></div></section>
     {categories.map((category) => {
       const items = menuItems.filter((item) => item.category_id === category.id);
       if (!items.length) return null;
@@ -153,27 +93,11 @@ export default function OrderPage() {
         </div>; })}</div>
       </section>;
     })}
-    {message === "success-bill" && (
-      <section className="bill-success-card">
-        <div className="bill-success-icon">✓</div>
-        <div>
-          <div className="eyebrow">SUCCESS</div>
-          <h2>พนักงานกำลังมา</h2>
-          <p>โต๊ะ {tableNumber} ปิดการสั่งอาหารและปิดโต๊ะเรียบร้อยแล้ว</p>
-          {billSummary && <div className="bill-success-total">ยอดสุทธิ {billSummary.grandTotal.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>}
-        </div>
-      </section>
-    )}
-
-    <section className="cart-card"><div className="cart-header"><div><div className="eyebrow">YOUR ORDER</div><h2><span className="inline-icon"><SectionIcon type="cart" /></span> รายการที่เลือก</h2></div><div className="cart-count">{itemCount} รายการ</div></div>
+    <section className="cart-card"><div className="cart-header"><div><div className="eyebrow">YOUR ORDER</div><h2>ถาดสั่งของคุณ</h2></div><div className="cart-count">{itemCount} รายการ</div></div>
       {!cart.length ? <p className="muted">ยังไม่มีรายการ เลือกเมนูด้านบนได้เลย</p> : <div className="cart-list">{cart.map((item) => <div className="cart-row" key={item.id}><div><strong>{item.name}</strong><div className="muted">{Number(item.price).toLocaleString()} บาท / ชิ้น</div></div><div className="cart-actions"><button onClick={() => changeQuantity(item, -1)}>−</button><span>{item.quantity}</span><button onClick={() => changeQuantity(item, 1)}>+</button><strong className="line-total">{(item.price * item.quantity).toLocaleString()} บาท</strong></div></div>)}</div>}
-      <div className="order-bill-summary">
-        <div><span>ยอดอาหาร</span><strong>{total.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong></div>
-        <div><span>VAT 7%</span><strong>{(total * 0.07).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong></div>
-        <div className="order-grand-total"><span>ยอดสุทธิ</span><strong>{(total * 1.07).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong></div>
-      </div>
-      <button className="submit-order-button" onClick={submitOrder} disabled={!cart.length || sending || billRequested}>{sending ? "กำลังส่งออเดอร์..." : "ส่งออเดอร์ไปที่ครัว"}</button>
-      {message && message !== "success-bill" && <p className="notice success">{message}</p>}
+      <div className="order-total-line"><span>ยอดสั่งซื้อ</span><strong>{total.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong></div>
+      <button className="submit-order-button" onClick={submitOrder} disabled={!cart.length || sending}>{sending ? "กำลังส่งออเดอร์..." : "ยืนยันออเดอร์ →"}</button>
+      {message && <p className="notice success">{message}</p>}
     </section>
   </main>;
 }

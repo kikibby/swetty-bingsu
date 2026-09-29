@@ -1,20 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { Brand, SectionIcon, TitleBlock } from "@/components/Brand";
-const columns = [
-  { status: "received", title: "รอรับออเดอร์", color: "orange", icon: "table", action: "รับออเดอร์", next: "preparing" },
-  { status: "preparing", title: "กำลังทำออเดอร์", color: "blue", icon: "kitchen", action: "ทำออเดอร์เสร็จ", next: "ready" },
-  { status: "ready", title: "พร้อมเสิร์ฟ", color: "green", icon: "menu", action: "เสร็จสิ้น", next: "served" },
+import { Brand } from "@/components/Brand";
+const columns=[
+ {status:"received",title:"INBOX",sub:"รับออเดอร์",next:"preparing",action:"เริ่มทำ",tone:"violet"},
+ {status:"preparing",title:"MAKING",sub:"กำลังทำ",next:"ready",action:"เสร็จแล้ว",tone:"blue"},
+ {status:"ready",title:"PASS",sub:"พร้อมเสิร์ฟ",next:"served",action:"ปิดคิว",tone:"green"},
 ];
-export default function KitchenPage() {
-  const [orders, setOrders] = useState([]), [message, setMessage] = useState("");
-  useEffect(() => { loadOrders(); const channel = supabase.channel("kitchen-orders").on("postgres_changes", { event: "*", schema: "public", table: "orders" }, loadOrders).subscribe(); return () => supabase.removeChannel(channel); }, []);
-  async function loadOrders() { const { data, error } = await supabase.from("orders").select("*").neq("status", "served").order("queue_number", { ascending: true }); if (error) setMessage(error.message); else setOrders(data || []); }
-  async function updateStatus(id, status) { const { error } = await supabase.from("orders").update({ status }).eq("id", id); if (error) setMessage(error.message); else await loadOrders(); }
-  const nextOrder = orders[0] || null;
-  return <main className="container kitchen-page"><div className="page-brand-row"><Brand compact /><span className="live-badge">● LIVE</span></div><div className="page-heading"><TitleBlock eyebrow="KITCHEN DISPLAY • REAL-TIME" title="จอจัดออเดอร์" description="ติดตามคิวตามลำดับ เมื่อเสร็จแล้วระบบจะไปคิวถัดไป" icon="kitchen" /></div>{message && <p className="notice error">{message}</p>}
-    {nextOrder && <div className="kitchen-next-queue"><span>คิวถัดไป</span><strong>#{nextOrder.queue_number}</strong><small>โต๊ะ {nextOrder.table_number}</small></div>}
-    <div className="kitchen-grid">{columns.map((column) => { const columnOrders = orders.filter((o) => o.status === column.status); return <section className={`kitchen-column ${column.color}`} key={column.status}><div className="column-header"><div className="column-icon"><SectionIcon type={column.icon} /></div><div><h2>{column.title}</h2><span>{columnOrders.length} ออเดอร์</span></div></div>{!columnOrders.length && <div className="empty-column">ยังไม่มีออเดอร์</div>}{columnOrders.map((order) => <div className={`order-card ${column.color}`} key={order.id}><div className="order-top"><div><span className="queue-tag">คิว #{order.queue_number}</span><span className="table-tag">โต๊ะ {order.table_number}</span><small>{new Date(order.created_at).toLocaleString("th-TH")}</small></div><strong>#{String(order.id).slice(0, 5)}</strong></div><div className="order-items">{(order.items || []).map((item, i) => <div className="order-item" key={i}><span>{item.name}</span><strong>× {item.quantity}</strong></div>)}</div><div className="order-bottom"><strong>{Number(order.total).toLocaleString()} บาท</strong><button className={`status-action ${column.color}`} onClick={() => updateStatus(order.id, column.next)}>{column.action}</button></div></div>)}</section>; })}</div>
-  </main>;
+export default function KitchenPage(){
+ const [orders,setOrders]=useState([]),[message,setMessage]=useState("");
+ useEffect(()=>{loadOrders();const timer=setInterval(loadOrders,3000);return()=>clearInterval(timer)},[]);
+ async function loadOrders(){try{const res=await fetch("/api/kitchen",{cache:"no-store"});const result=await res.json();if(!res.ok)throw new Error(result.message||"โหลดคิวไม่ได้");setOrders(result.orders||[]);setMessage("")}catch(error){setMessage(error.message||"โหลดคิวไม่ได้")}}
+ async function updateStatus(id,status){try{const res=await fetch("/api/kitchen",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,status})});const result=await res.json();if(!res.ok)throw new Error(result.message||"เปลี่ยนสถานะไม่ได้");await loadOrders()}catch(error){setMessage(error.message||"เปลี่ยนสถานะไม่ได้")}}
+ const next=orders[0];
+ return <main className="container kitchen-board"><header className="kitchen-nav"><Brand compact/><div><span>KITCHEN / QUEUE CONTROL</span><small>สด • อัปเดตอัตโนมัติ</small></div><div className="kitchen-clock">{orders.length}<small>คิวค้าง</small></div></header>
+ <section className="kitchen-hero"><div><span>NEXT IN LINE</span><strong>{next?`#${next.queue_number}`:"—"}</strong><p>{next?`โต๊ะ ${next.table_number} • ทำตามลำดับคิว`:"ยังไม่มีออเดอร์ที่รอ"}</p></div><div className="queue-wave"/></section>
+ {message&&<p className="notice error">{message}</p>}
+ <section className="kitchen-columns">{columns.map(col=>{const rows=orders.filter(o=>o.status===col.status);return <div className={`kitchen-lane ${col.tone}`} key={col.status}><div className="lane-title"><div><span>{col.title}</span><h2>{col.sub}</h2></div><b>{rows.length}</b></div>{rows.map(order=><article className="kitchen-ticket" key={order.id}><div className="ticket-top"><strong>#{order.queue_number}</strong><span>โต๊ะ {order.table_number}</span></div><div className="ticket-items">{(order.items||[]).map((item,i)=><div key={i}><span>{item.name}</span><b>×{item.quantity}</b></div>)}</div><div className="ticket-bottom"><strong>{Number(order.total).toLocaleString()} ฿</strong><button onClick={()=>updateStatus(order.id,col.next)}>{col.action} →</button></div></article>)}</div>})}</section>
+ </main>;
 }

@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Brand } from "@/components/Brand";
 
 const statusMap = {
-  received: ["🟡", "รับออเดอร์แล้ว"],
-  preparing: ["🟠", "กำลังเตรียมอาหาร"],
-  ready: ["🟢", "พร้อมเสิร์ฟ"],
-  served: ["✅", "เสิร์ฟแล้ว"],
+  received: ["รอครัว", "status-wait"],
+  preparing: ["กำลังทำ", "status-making"],
+  ready: ["พร้อมเสิร์ฟ", "status-ready"],
+  served: ["เสิร์ฟแล้ว", "status-done"],
 };
 
 export default function CustomerPage() {
@@ -16,9 +17,6 @@ export default function CustomerPage() {
   const [data, setData] = useState(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [requesting, setRequesting] = useState("");
-  const [billClosed, setBillClosed] = useState(false);
-  const [billSummary, setBillSummary] = useState(null);
 
   async function loadCustomer() {
     try {
@@ -37,66 +35,29 @@ export default function CustomerPage() {
     return () => clearInterval(timer);
   }, []);
 
-  async function requestStaff(type) {
-    setRequesting(type);
-    try {
-      const res = await fetch("/api/staff-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.message || "ส่งคำขอไม่ได้");
-      if (type === "bill") {
-        setBillClosed(true);
-        setBillSummary(result.billing || null);
-        setMessage("พนักงานกำลังมา");
-      } else {
-        setMessage("เรียกพนักงานแล้ว กรุณารอสักครู่");
-        await loadCustomer();
-      }
-    } catch (e) { setMessage(e.message || "เกิดข้อผิดพลาด"); }
-    finally { setRequesting(""); }
-  }
-
-  if (loading) return <main className="container loading-page"><p>กำลังโหลดออเดอร์...</p></main>;
-  if (!data) return <main className="container"><div className="card error-panel"><h1>โต๊ะ {tableNumber}</h1><p className="error">{message || "ไม่พบ Session"}</p></div></main>;
+  if (loading) return <main className="container receipt-page loading-page"><Brand compact /><p>กำลังเตรียมใบออเดอร์...</p></main>;
+  if (!data) return <main className="container receipt-page"><div className="receipt-error"><Brand compact /><h1>โต๊ะ {tableNumber}</h1><p>{message || "ไม่พบ Session"}</p></div></main>;
 
   const subtotal = (data.orders || []).reduce((sum, o) => sum + Number(o.total), 0);
-  const vat = Math.round(subtotal * 0.07 * 100) / 100;
-  const total = Math.round((subtotal + vat) * 100) / 100;
-  const staffPending = data.requests?.some((r) => r.type === "staff");
-  const billPending = data.requests?.some((r) => r.type === "bill");
 
   return (
-    <main className="container customer-page">
-      <div className="customer-header">
-        <div><div className="eyebrow">WAN HIMA BINGSU</div><h1>โต๊ะ {data.session.table_number}</h1><p>ผู้ใหญ่ {data.session.adult_count} • เด็ก {data.session.child_count}</p></div>
-      </div>
-      <section className="card">
-        <h2>🍱 ออเดอร์ของฉัน</h2>
-        {!data.orders.length ? <p className="muted">ยังไม่มีออเดอร์</p> : data.orders.map((order) => {
-          const [icon, label] = statusMap[order.status] || statusMap.received;
-          return <div className="customer-order" key={order.id}>
-            <div className="customer-order-top"><strong>🎟️ คิว #{order.queue_number} · {icon} {label}</strong><strong>{Number(order.total).toLocaleString()} บาท</strong></div>
-            {order.items.map((item, i) => <div className="customer-item" key={i}><span>{item.name} × {item.quantity}</span><span>{(Number(item.price)*Number(item.quantity)).toLocaleString()} บาท</span></div>)}
-          </div>;
+    <main className="container receipt-page">
+      <header className="receipt-head"><Brand compact /><div><span>ORDER CHECK</span><strong>TABLE {data.session.table_number}</strong></div></header>
+      <section className="receipt-intro"><div className="receipt-number">{String(data.orders.length).padStart(2, "0")}</div><div><span>รายการของคุณ</span><h1>กำลังเดินทางสู่โต๊ะ</h1><p>หน้านี้จะอัปเดตสถานะออเดอร์อัตโนมัติ</p></div></section>
+      <section className="receipt-paper">
+        <div className="receipt-paper-head"><span>QUEUE / ITEMS</span><span>STATUS</span></div>
+        {!data.orders.length ? <div className="receipt-empty">ยังไม่มีออเดอร์<br /><small>กลับไปหน้าเมนูเพื่อสั่งบิงซูได้เลย</small></div> : data.orders.map((order) => {
+          const [label, cls] = statusMap[order.status] || statusMap.received;
+          return <article className="receipt-order" key={order.id}>
+            <div className="receipt-order-main"><div className="queue-number">#{order.queue_number}</div><div><h2>ออเดอร์สำหรับโต๊ะ {order.table_number}</h2>{order.items.map((item, i) => <p key={i}>{item.name} × {item.quantity}</p>)}</div></div>
+            <div className={`receipt-status ${cls}`}>{label}</div>
+            <div className="receipt-order-total">{Number(order.total).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>
+          </article>;
         })}
-        <div className="customer-bill-summary">
-          <div><span>ยอดอาหาร</span><strong>{subtotal.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong></div>
-          <div><span>VAT 7%</span><strong>{vat.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong></div>
-          <div className="customer-grand-total"><span>ยอดสุทธิ</span><strong>{total.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong></div>
-        </div>
+        <div className="receipt-total"><span>ยอดรวมออเดอร์</span><strong>{subtotal.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong></div>
       </section>
-      {!billClosed ? <section className="customer-actions">
-        <button className="staff-button" disabled={!!requesting || staffPending} onClick={() => requestStaff("staff")}>{requesting === "staff" ? "กำลังส่ง..." : staffPending ? "✓ เรียกพนักงานแล้ว" : "🔔 เรียกพนักงาน"}</button>
-        <button className="bill-button" disabled={!!requesting || billPending} onClick={() => requestStaff("bill")}>{requesting === "bill" ? "กำลังส่ง..." : billPending ? "✓ เรียกเก็บเงินแล้ว" : "💳 เรียกเก็บเงิน"}</button>
-      </section> : <section className="bill-closed-success">
-        <div className="bill-success-icon">✓</div>
-        <div><div className="eyebrow">SUCCESS</div><h2>พนักงานกำลังมา</h2><p>โต๊ะ {data.session.table_number} ปิดเรียบร้อยแล้ว</p>{billSummary && <strong>ยอดสุทธิ {billSummary.grandTotal.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</strong>}</div>
-      </section>}
-      {message && <p className="notice success">{message === "พนักงานกำลังมา" ? "✓ พนักงานกำลังมา กรุณารอสักครู่" : message}</p>}
-      <p className="muted customer-security-note">🔐 Session นี้ผูกกับโต๊ะจาก QR ไม่สามารถเลือกดูออเดอร์ของโต๊ะอื่นได้</p>
+      <p className="receipt-note">โต๊ะ {data.session.table_number} • ผู้ใหญ่ {data.session.adult_count} • เด็ก {data.session.child_count}</p>
+      {message && <p className="notice error">{message}</p>}
     </main>
   );
 }
