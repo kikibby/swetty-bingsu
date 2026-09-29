@@ -88,3 +88,11 @@ npm run build
 - Customer-facing pages no longer show staff-call, bill collection, or VAT controls.
 - The four active bingsu items remain the same and continue using the `Bingsuu` Storage bucket.
 - Home, order, customer status, QR studio, kitchen, dashboard, and staff floor monitor use separate visual layouts.
+
+## Current WAN HIMA BINGSU setup
+- Supabase Project URL: `https://qyfbgupjvdvkqyrlcgsz.supabase.co`
+- Storage bucket: `Bingsuu` (Public)
+- Menu images: `strawberry-bingsu.png.jpg`, `mango-bingsu.png.jpg`, `matcha-bingsu.png.jpg`, `choco-bingsu.png.jpg`
+- Customer page shows only menu, cart, total and order confirmation. Staff-call/billing/VAT customer buttons are not used.
+- Telegram is sent only when a new order is created.
+- Vercel must define `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `TELEGRAM_BOT_TOKEN`, and `TELEGRAM_CHAT_ID`.
