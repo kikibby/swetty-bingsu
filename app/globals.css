@@ -17,3 +17,100 @@
 .floor-page{padding:28px 0 55px}.floor-header{display:grid;grid-template-columns:100px 1fr auto;align-items:center;border-bottom:1px solid #ddd6cb;padding-bottom:20px}.floor-header .brand{justify-content:flex-start}.floor-header .brand-logo{width:82px}.floor-header span{font:700 10px 'DM Sans';letter-spacing:.18em;color:#9a6f7d}.floor-header h1{margin:4px 0;font-size:36px}.floor-count{width:76px;height:76px;border-radius:20px;background:#d9f0e7;display:grid;place-items:center;align-content:center}.floor-count strong{font:700 25px 'DM Sans'}.floor-count span{font:700 9px 'DM Sans';letter-spacing:.15em}.floor-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:28px}.floor-table{aspect-ratio:1;border-radius:22px;border:1px solid #dfd7cb;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 7px 22px rgba(45,37,31,.05);transition:.2s}.floor-table.open{background:#222a26;color:#fff;border-color:#222a26;transform:translateY(-3px)}.floor-table span{font:700 9px 'DM Sans';letter-spacing:.18em;color:#9b9187}.floor-table.open span{color:#9fb0a6}.floor-table strong{font:700 34px 'DM Sans';margin:6px 0}.floor-table p{margin:0;font-size:11px}.floor-table i{font-style:normal;font-size:9px;color:#8a918d;margin-top:6px}.floor-table.open i{color:#b9d8c9}.floor-page footer{text-align:center;margin-top:30px;color:#929993;font-size:11px}.floor-login-brand{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd6cb;padding-bottom:20px}.floor-login-brand .brand-logo{width:82px}.floor-login-brand span{font:700 10px 'DM Sans';letter-spacing:.18em}.floor-login{max-width:650px;margin:90px auto;text-align:center}.floor-login>span{font:700 10px 'DM Sans';letter-spacing:.2em;color:var(--berry)}.floor-login h1{font-size:72px;line-height:.9;margin:20px 0}.floor-login h1 em{color:var(--berry);font-style:normal}.floor-login p{color:var(--muted)}.floor-login form{display:flex;max-width:500px;margin:30px auto 0;gap:8px}.floor-login input{flex:1;border:1px solid #d8d0c4;background:#fff;padding:14px;border-radius:12px}.floor-login button{border:0;border-radius:12px;background:#252c28;color:#fff;padding:0 20px;font-weight:700}
 @media(max-width:900px){.landing-stage,.qr-studio-layout{grid-template-columns:1fr}.landing-copy{padding-left:0}.landing-art{min-height:420px}.menu-grid,.kitchen-columns{grid-template-columns:1fr}.dash-metrics{grid-template-columns:1fr 1fr}.floor-grid{grid-template-columns:repeat(4,1fr)}.qr-studio-preview{border-left:0;border-top:1px solid #414a45;padding-top:35px}.qr-studio-form{max-width:none}.receipt-order{grid-template-columns:1fr}.receipt-status{justify-self:start}.receipt-order-total{grid-column:auto}}
 @media(max-width:620px){.container{width:min(100% - 24px,1180px)}.landing-nav{grid-template-columns:1fr auto}.nav-note{display:none}.landing-copy h1{font-size:64px}.landing-stage{min-height:auto;padding:35px 0}.landing-art{min-height:330px}.art-one{width:280px;height:280px}.art-two{width:190px;height:190px}.art-card{min-height:310px;width:250px}.art-card .brand-logo{width:210px}.landing-strip{grid-template-columns:1fr 1fr}.landing-strip div:nth-child(2){border-right:0}.landing-strip div{border-bottom:1px solid #d9d1c5}.order-intro{align-items:flex-start;gap:20px}.order-intro h1{font-size:44px}.order-count-orb{width:82px;height:82px;flex:none}.order-count-orb strong{font-size:26px}.menu-grid{grid-template-columns:1fr}.menu-card{grid-template-columns:105px 1fr}.menu-image-wrap{height:105px}.quantity-control{grid-column:1/-1;flex-direction:row;justify-content:flex-end}.cart-row{flex-direction:column}.cart-actions{justify-content:space-between}.line-total{text-align:left}.dash-head{grid-template-columns:80px 1fr}.dash-date{display:none}.dash-metrics{grid-template-columns:1fr 1fr}.metric.large{grid-column:1/-1}.dash-row{grid-template-columns:60px 60px 1fr}.dash-row strong{grid-column:3;text-align:left}.floor-grid{grid-template-columns:repeat(3,1fr)}.floor-header{grid-template-columns:70px 1fr auto}.floor-login h1{font-size:55px}.floor-login form{flex-direction:column}.floor-login button{padding:14px}.qr-studio-form h1{font-size:58px}.qr-studio-layout{gap:40px}.qr-paper img{width:270px}.receipt-intro h1{font-size:30px}}
+/* =========================================================
+   QR DIRECT LINK
+   WAN HIMA BINGSU
+   ========================================================= */
+
+.qr-direct-link {
+  width: min(560px, 90%);
+  margin-top: 22px;
+  padding: 18px 20px;
+
+  background: #fffaf0;
+
+  border: 1px solid #e7d8cc;
+  border-radius: 20px;
+
+  box-shadow:
+    0 14px 35px rgba(0, 0, 0, 0.12);
+
+  text-align: center;
+}
+
+
+.qr-direct-link-title {
+  margin-bottom: 10px;
+
+  color: #493b35;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+
+.qr-direct-link-url {
+  display: block;
+
+  margin-bottom: 14px;
+
+  color: #c95f7c;
+
+  font-size: 12px;
+  line-height: 1.6;
+
+  text-decoration: none;
+
+  word-break: break-all;
+}
+
+
+.qr-direct-link-url:hover {
+  text-decoration: underline;
+}
+
+
+.qr-copy-button {
+  border: 0;
+
+  border-radius: 999px;
+
+  padding: 10px 20px;
+
+  background: #d96b8a;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+
+.qr-copy-button:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+
+.qr-copy-button:active {
+  transform: translateY(0);
+}
+
+
+@media (max-width: 620px) {
+
+  .qr-direct-link {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .qr-direct-link-url {
+    font-size: 11px;
+  }
+
+}
